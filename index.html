@@ -310,6 +310,9 @@
   .dl{display:grid;grid-template-columns:96px 1fr;gap:10px 12px;font-size:13px;}
   .dl .k{color:var(--text3);}
   .dl .v{color:var(--text);word-break:break-all;}
+  .dl .grp{grid-column:1/-1;font-size:12px;font-weight:600;color:var(--brand);
+    padding:12px 0 4px;margin-top:6px;border-top:1px solid #e3e9f2;}
+  .dl .grp:first-child{border-top:0;margin-top:0;padding-top:0;}
 </style>
 </head>
 <body>
@@ -456,7 +459,7 @@
         <div class="head-row">
           <div>
             <div class="page-title">记录审核</div>
-            <div class="page-sub">养殖过程记录中，仅<b>投喂、移池、捕捞</b>三类需协会审核；通过后进入正式记录，未通过的记录不对消费者展示</div>
+            <div class="page-sub">养殖过程记录中，仅<b>投苗、移池、捕捞</b>三类需协会审核；通过后进入正式记录，未通过的记录不对消费者展示</div>
           </div>
         </div>
 
@@ -464,7 +467,7 @@
           <div class="fld"><label>记录类型</label>
             <select class="select" id="fType" onchange="renderAudit()">
               <option value="">全部</option>
-              <option>投喂记录</option><option>移池记录</option><option>捕捞记录</option>
+              <option>投苗记录</option><option>移池记录</option><option>捕捞记录</option>
             </select>
           </div>
           <div class="fld"><label>养殖户</label>
@@ -803,6 +806,7 @@
         <div class="it"><span class="k">鱼种</span><span class="v" id="iFish">—</span></div>
         <div class="it"><span class="k">预售数量</span><span class="v"><b id="iQty">—</b></span></div>
         <div class="it"><span class="k">投苗编码</span><span class="v mono" id="iSeed">—</span></div>
+        <div class="it"><span class="k">当前存塘</span><span class="v"><b id="iStock">—</b></span></div>
       </div>
 
       <div class="row2">
@@ -1402,26 +1406,35 @@ function viewCapture(i){
   document.getElementById('viewFoot').innerHTML = '<button class="mbtn" onclick="closeMask(\'maskView\')">关闭</button>';
   document.getElementById('viewTitle').textContent = '捕捞记录详情';
   document.getElementById('viewBody').innerHTML = `
+    <div class="grp">基础信息</div>
     <div class="k">捕捞记录编码</div><div class="v mono">${r.id}</div>
     <div class="k">关联投苗记录</div><div class="v mono">${r.seed}</div>
     <div class="k">关联申请编号</div><div class="v mono">${r.ps}</div>
-    <div class="k">养殖池编码</div><div class="v mono">${r.poolCode}</div>
     <div class="k">养殖池名称</div><div class="v">${r.poolName}</div>
+    <div class="k">养殖池编码</div><div class="v mono">${r.poolCode}</div>
     <div class="k">基地名称</div><div class="v">${r.base}</div>
-    <div class="k">关联养殖户名称</div><div class="v">${r.farmer}</div>
+    <div class="k">养殖户</div><div class="v">${r.farmer}</div>
     <div class="k">产品名称</div><div class="v">${r.product}</div>
+
+    <div class="grp">捕捞信息</div>
     <div class="k">预计出售</div><div class="v mono">${num(r.planQty || r.qty)} 尾</div>
-    <div class="k">捕捞数量</div><div class="v mono">${num(r.qty)} 尾（绑定 ${num(r.codes)} 个码）</div>
+    <div class="k">捕捞数量</div><div class="v mono">${num(r.qty)} 尾</div>
     <div class="k">捕捞数量（斤）</div><div class="v mono">${r.weight ? r.weight + ' 斤' : '<span class="muted">—</span>'}</div>
     <div class="k">计划-实际差异</div><div class="v mono">${diffText(r)}</div>
-    <div class="k">养殖池清空</div><div class="v">${r.cleared
-      ? '<span class="tag blue">已清空</span> <span style="color:#93a2b5;">清池前存塘 ' + num(r.stockBefore || 0) + ' 尾，本次已全部核减</span>'
-      : '<span class="muted">否</span>'}</div>
-    <div class="k">绑定码段</div><div class="v mono">${recSegs(r).map(o=>o.f + " – " + o.t).join("<br>") || "—"}　（合计 ${num(r.codes)} 个）</div>
+
+    <div class="grp">存塘与清池</div>
+    <div class="k">提交前存塘</div><div class="v mono">${num(r.stockBefore || 0)} 尾</div>
+    <div class="k">提交后存塘</div><div class="v mono">${num(r.stockAfter !== undefined ? r.stockAfter : (r.cleared ? 0 : Math.max((r.stockBefore||0) - (r.qty||0), 0)))} 尾</div>
+    <div class="k">养殖池清空</div><div class="v">${r.cleared ? '<span class="tag blue">已清空</span>' : '<span class="muted">否</span>'}</div>
+
+    <div class="grp">码段与附件</div>
+    <div class="k">绑定码段</div><div class="v mono">${recSegs(r).map(o=>o.f + " – " + o.t).join("<br>") || "—"}（合计 ${num(r.codes)} 个）</div>
     <div class="k">检测报告</div><div class="v"><span class="tag link">${r.report}</span></div>
     <div class="k">现场图片</div><div class="v">${(r.photos && r.photos.length)
       ? r.photos.map(f=>'<span class="tag link">' + f + '</span>').join('<br>')
       : '<span class="muted">—</span>'}</div>
+
+    <div class="grp">操作记录</div>
     <div class="k">创建人</div><div class="v">${r.creator}</div>
     <div class="k">捕捞时间</div><div class="v mono">${r.time}</div>
     <div class="k">创建时间</div><div class="v mono">${r.created}</div>
@@ -1605,24 +1618,24 @@ function submitPresale(){
 
 /* ================= 记录审核 ================= */
 const AUDIT_ROWS = [
-  {id:'JL20261027001', type:'投喂记录', farmer:'千发养殖户', name:'王大海', pool:'演示养殖池2号',
-   src:'2026-10-27 投喂记录（配合饲料 120kg）', submit:'2026-10-27 08:12', st:'待审核', auditor:'—', auditTime:'—', reason:''},
+  {id:'JL20261027001', type:'投苗记录', farmer:'千发养殖户', name:'王大海', pool:'演示养殖池2号',
+   src:'2026-10-27 投苗记录（鳙鱼 1,500 尾）', submit:'2026-10-27 08:12', st:'待审核', auditor:'—', auditTime:'—', reason:''},
   {id:'JL20261027002', type:'移池记录', farmer:'跳跃养殖户', name:'李建国', pool:'A01池',
    src:'2026-10-26 移池记录（演示养殖池4号 → A01池，780 尾）', submit:'2026-10-26 16:40', st:'待审核', auditor:'—', auditTime:'—', reason:''},
   {id:'JL20261026003', type:'捕捞记录', farmer:'千岛湖养殖户', name:'陈小虎', pool:'演示养殖池3号',
    src:'2026-10-26 捕捞记录（捕捞 620 尾、绑码 620 个）', submit:'2026-10-26 09:25', st:'待审核', auditor:'—', auditTime:'—', reason:''},
-  {id:'JL20261025004', type:'投喂记录', farmer:'千发养殖户', name:'王大海', pool:'演示养殖池5号',
-   src:'2026-10-25 投喂记录（配合饲料 96kg）', submit:'2026-10-25 15:10', st:'已通过', auditor:'协会审核员', auditTime:'2026-10-25 17:02', reason:''},
+  {id:'JL20261025004', type:'投苗记录', farmer:'千发养殖户', name:'王大海', pool:'演示养殖池5号',
+   src:'2026-10-25 投苗记录（鳙鱼 800 尾）', submit:'2026-10-25 15:10', st:'已通过', auditor:'协会审核员', auditTime:'2026-10-25 17:02', reason:''},
   {id:'JL20261025005', type:'捕捞记录', farmer:'跳跃养殖户', name:'李建国', pool:'演示养殖池4号',
    src:'2026-10-25 捕捞记录（捕捞 500 尾、绑码 480 个）', submit:'2026-10-25 10:02', st:'已通过', auditor:'协会审核员', auditTime:'2026-10-25 11:30', reason:''},
-  {id:'JL20261024006', type:'投喂记录', farmer:'千岛湖养殖户', name:'陈小虎', pool:'A01池',
-   src:'2026-10-24 投喂记录（配合饲料 95kg）', submit:'2026-10-24 08:30', st:'已驳回', auditor:'协会审核员', auditTime:'2026-10-24 10:15', reason:'投喂量与存塘不匹配，请核实后重新提交'},
+  {id:'JL20261024006', type:'投苗记录', farmer:'千岛湖养殖户', name:'陈小虎', pool:'A01池',
+   src:'2026-10-24 投苗记录（鲢鱼 900 尾）', submit:'2026-10-24 08:30', st:'已驳回', auditor:'协会审核员', auditTime:'2026-10-24 10:15', reason:'投苗数量与养殖池容量不匹配，请核实后重新提交'},
   {id:'JL20261024007', type:'移池记录', farmer:'千发养殖户', name:'王大海', pool:'演示养殖池6号',
    src:'2026-10-24 移池记录（演示养殖池2号 → 6号，1,200 尾）', submit:'2026-10-24 14:15', st:'已通过', auditor:'协会审核员', auditTime:'2026-10-24 16:40', reason:''},
   {id:'JL20261023008', type:'捕捞记录', farmer:'跳跃养殖户', name:'李建国', pool:'演示养殖池2号',
    src:'2026-10-23 捕捞记录（捕捞 300 尾、绑码 300 个）', submit:'2026-10-23 11:20', st:'已驳回', auditor:'协会审核员', auditTime:'2026-10-23 13:05', reason:'绑定码段与本次捕捞批次不对应，请核对后重新提交'},
-  {id:'JL20261023009', type:'投喂记录', farmer:'千岛湖养殖户', name:'陈小虎', pool:'演示养殖池3号',
-   src:'2026-10-23 投喂记录（配合饲料 78kg）', submit:'2026-10-23 09:05', st:'已通过', auditor:'协会审核员', auditTime:'2026-10-23 10:20', reason:''},
+  {id:'JL20261023009', type:'投苗记录', farmer:'千岛湖养殖户', name:'陈小虎', pool:'演示养殖池3号',
+   src:'2026-10-23 投苗记录（鲢鱼 700 尾）', submit:'2026-10-23 09:05', st:'已通过', auditor:'协会审核员', auditTime:'2026-10-23 10:20', reason:''},
   {id:'JL20261022010', type:'移池记录', farmer:'千发养殖户', name:'王大海', pool:'A01池',
    src:'2026-10-22 移池记录（演示养殖池6号 → A01池，900 尾）', submit:'2026-10-22 16:45', st:'已通过', auditor:'协会审核员', auditTime:'2026-10-22 18:10', reason:''}
 ];
@@ -2150,6 +2163,7 @@ function pickCapPresale(id){
   document.getElementById('iFish').textContent = pl.fish;
   document.getElementById('iQty').textContent = num(p.qty) + ' 尾';
   document.getElementById('iSeed').textContent = pl.seed;
+  document.getElementById('iStock').textContent = num(pl.stock) + ' 尾';
   document.getElementById('qty').value = '';
   validateCapture();
   refreshClearOption();
@@ -2419,6 +2433,7 @@ function submitCapture(){
   const stockBefore = pl.stock;
 
   const segList = segs.filter(x=>x.f && x.t).map(x=>({f:x.f, t:x.t}));
+  const stockAfter = cleared ? 0 : Math.max(stockBefore - capQty, 0);
   const rec = {
     seed:pl.seed, ps:p.id, poolCode:pl.code,
     poolName:pl.pool, base:pl.base, farmer:p.farmer,
@@ -2431,7 +2446,7 @@ function submitCapture(){
     time:document.getElementById('capTime').value.replace('T',' '),
     weight:document.getElementById('capWeight').value,
     remark:document.getElementById('remark').value,
-    cleared:cleared, stockBefore:stockBefore,
+    cleared:cleared, stockBefore:stockBefore, stockAfter:stockAfter,
     created:now(), creator:ME_FARMER, status:'已完成'
   };
   if(editCapIdx !== null && captures[editCapIdx] && captures[editCapIdx].status === '草稿'){
@@ -2454,7 +2469,7 @@ function submitCapture(){
   }
 
   // 存塘：勾选清池直接归零，否则按本次捕捞数递减（存塘为估算值，最低到 0）
-  pl.stock = cleared ? 0 : Math.max(pl.stock - capQty, 0);
+  pl.stock = stockAfter;
 
   p.status = '已捕捞';
   closeMask('maskCapture');
