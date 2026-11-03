@@ -313,6 +313,7 @@
   .dl .grp{grid-column:1/-1;font-size:12px;font-weight:600;color:var(--brand);
     padding:12px 0 4px;margin-top:6px;border-top:1px solid #e3e9f2;}
   .dl .grp:first-child{border-top:0;margin-top:0;padding-top:0;}
+  .grow-box{border:1px solid #e3e9f2;border-radius:8px;background:#f8fafd;padding:12px 14px 2px;}
 </style>
 </head>
 <body>
@@ -357,7 +358,7 @@
           <div class="fld"><label>养殖池</label><input class="input" placeholder="请输入养殖池名称搜索"></div>
           <div class="fld"><label>鱼种</label><input class="input" placeholder="请输入鱼种名称搜索"></div>
           <div class="fld"><label>状态</label>
-            <select class="select"><option>全部</option><option>待捕捞</option><option>已捕捞</option><option>已失效</option></select>
+            <select class="select"><option>全部</option><option>待审批</option><option>待捕捞</option><option>已捕捞</option><option>已驳回</option><option>已失效</option><option>已作废</option></select>
           </div>
           <div class="date-fld">
             <label>预计出售时间</label>
@@ -416,7 +417,7 @@
             <input class="input" placeholder="开始日期"><span class="dash">至</span><input class="input" placeholder="结束日期">
           </div>
           <div class="fld"><label>状态</label>
-            <select class="select"><option>全部</option><option>待审批</option><option>已通过</option><option>已驳回</option><option>已撤回</option></select>
+            <select class="select"><option>全部</option><option>待审批</option><option>待捕捞</option><option>已捕捞</option><option>已驳回</option><option>已失效</option><option>已作废</option></select>
           </div>
           <div class="fld" style="justify-content:flex-end;">
             <div class="filter-actions">
@@ -809,6 +810,21 @@
         <div class="it"><span class="k">当前存塘</span><span class="v"><b id="iStock">—</b></span></div>
       </div>
 
+      <div class="fi">
+        <label class="lb">选择模板<i>*</i></label>
+        <div style="display:flex;gap:22px;padding-top:4px;">
+          <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:#22303f;cursor:pointer;">
+            <input type="radio" name="capTemplate" value="陆基消费者-无订单客商" checked style="accent-color:#2563eb;">
+            陆基消费者-无订单客商
+          </label>
+          <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:#22303f;cursor:pointer;">
+            <input type="radio" name="capTemplate" value="陆基消费者-有订单客商" style="accent-color:#2563eb;">
+            陆基消费者-有订单客商
+          </label>
+        </div>
+        <div class="hint" id="templateHint"></div>
+      </div>
+
       <div class="row2">
         <div class="fi">
           <label class="lb">产品名称<i>*</i></label>
@@ -885,6 +901,30 @@
           <span>支持 JPG / PNG，单个不超过 10MB，可多次上传</span>
         </div>
         <div class="hint" id="photoErr"></div>
+      </div>
+
+      <div class="fi">
+        <label class="lb">成鱼培育</label>
+        <div class="grow-box">
+          <div class="fi" style="margin-bottom:10px;">
+            <label class="lb" style="font-size:12px;color:#5a6b80;">培育图片</label>
+            <div class="up" id="growPhotoBox" onclick="pickGrowPhoto()">
+              <svg class="up-ico" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5"/><path d="M7.5 9.5L12 5l4.5 4.5"/><path d="M4 16v2.5A1.5 1.5 0 005.5 20h13a1.5 1.5 0 001.5-1.5V16"/></svg>
+              <p>点击上传培育图片</p>
+              <span>支持 JPG / PNG，单个不超过 10MB</span>
+            </div>
+          </div>
+          <div class="row2">
+            <div class="fi">
+              <label class="lb" style="font-size:12px;color:#5a6b80;">培育时间</label>
+              <input class="ipt" type="datetime-local" id="growTime">
+            </div>
+            <div class="fi">
+              <label class="lb" style="font-size:12px;color:#5a6b80;">培育地点</label>
+              <input class="ipt" id="growPlace" placeholder="请输入培育地点">
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="fi">
@@ -1130,7 +1170,7 @@ const POOLS = [
 /* 产品主数据（产品名称下拉取值，用于后续溯源展示） */
 const PRODUCTS = ['演示产品', '鳙鱼', '鲢鱼', '鲈鱼'];
 
-/* 溯源码申请单：一张单，状态 待审批 / 待捕捞 / 已捕捞 / 已驳回 / 已失效 */
+/* 溯源码申请单：一张单，状态 待审批 / 待捕捞 / 已捕捞 / 已驳回 / 已失效 / 已作废 */
 let applications = [
   {id:'AQ202610009', farmer:'跳跃养殖户', po:0, planDate:'2026-11-05', qty:500, codes:500,
    status:'待捕捞', applyTime:'2026-10-18 10:12', auditTime:'2026-10-18 15:30', created:'2026-10-18'},
@@ -1157,7 +1197,7 @@ let applications = [
   {id:'AQ202610013', farmer:'跳跃养殖户', po:2, planDate:'2026-11-28', qty:400, codes:400,
    status:'待审批', applyTime:'2026-10-25 10:00', auditTime:'—', created:'2026-10-25'},
   {id:'AQ202610014', farmer:'跳跃养殖户', po:2, planDate:'2026-11-30', qty:300, codes:300,
-   status:'已失效', applyTime:'2026-10-24 09:00', auditTime:'—', created:'2026-10-24'}
+   status:'已作废', applyTime:'2026-10-24 09:00', auditTime:'2026-10-24 11:30', created:'2026-10-24'}
 ];
 
 let captures = [
@@ -1238,7 +1278,7 @@ function poolAvail(po){ return POOLS[po].stock - declaredQty(po); }
 function poolOf(p){ return POOLS[p.po]; }
 function fullPool(p){ const pl = poolOf(p); return pl.base + ' / ' + pl.shop + ' / ' + pl.pool; }
 
-const ST_TAG = {'待审批':'orange','待捕捞':'blue','已捕捞':'green','已驳回':'red','已失效':'red'};
+const ST_TAG = {'待审批':'orange','待捕捞':'blue','已捕捞':'green','已驳回':'red','已失效':'red','已作废':'gray'};
 const ME_FARMER = '跳跃养殖户';   // 当前登录账号所属养殖户
 
 /* ================= 溯源码申请列表（养殖户端） ================= */
@@ -1298,11 +1338,15 @@ function viewPresale(id){
 
 function withdrawPresale(id){
   const p = psById(id);
-  p.status = '已失效';
+  if(p.status === '待审批'){
+    p.status = '已失效';          // 待审批阶段撤回 → 已失效
+  } else if(p.status === '待捕捞'){
+    p.status = '已作废';          // 审批通过后撤回 → 已作废
+  }
   farmers[p.farmer] += p.codes;   // 撤回返还额度
   renderPresale();
   renderReview();
-  toast('申请单 ' + id + ' 已撤回，状态更新为「已失效」，占用的 ' + num(p.codes) + ' 个额度已返还');
+  toast('申请单 ' + id + ' 已撤回，状态更新为「' + p.status + '」，占用的 ' + num(p.codes) + ' 个额度已返还');
 }
 
 /* ================= 溯源码审批（协会端） ================= */
@@ -1415,6 +1459,7 @@ function viewCapture(i){
     <div class="k">基地名称</div><div class="v">${r.base}</div>
     <div class="k">养殖户</div><div class="v">${r.farmer}</div>
     <div class="k">产品名称</div><div class="v">${r.product}</div>
+    <div class="k">模板</div><div class="v">${r.template || '<span class="muted">—</span>'}</div>
 
     <div class="grp">捕捞信息</div>
     <div class="k">预计出售</div><div class="v mono">${num(r.planQty || r.qty)} 尾</div>
@@ -1433,6 +1478,11 @@ function viewCapture(i){
     <div class="k">现场图片</div><div class="v">${(r.photos && r.photos.length)
       ? r.photos.map(f=>'<span class="tag link">' + f + '</span>').join('<br>')
       : '<span class="muted">—</span>'}</div>
+
+    <div class="grp">成鱼培育</div>
+    <div class="k">培育图片</div><div class="v">${r.growPhoto ? '<span class="tag link">' + r.growPhoto + '</span>' : '<span class="muted">—</span>'}</div>
+    <div class="k">培育时间</div><div class="v mono">${r.growTime || '<span class="muted">—</span>'}</div>
+    <div class="k">培育地点</div><div class="v">${r.growPlace || '<span class="muted">—</span>'}</div>
 
     <div class="grp">操作记录</div>
     <div class="k">创建人</div><div class="v">${r.creator}</div>
@@ -1979,7 +2029,16 @@ function submitReg(){
 }
 
 /* ================= 新增捕捞记录 ================= */
-let editCapIdx = null, capPhotos = [];
+let editCapIdx = null, capPhotos = [], growPhoto = '';
+
+function pickGrowPhoto(){
+  growPhoto = '培育图片-' + today() + '.jpg';
+  const box = document.getElementById('growPhotoBox');
+  if(box){
+    box.className = 'up filled';
+    box.innerHTML = '<p>' + growPhoto + '</p><span>已上传</span>';
+  }
+}
 
 function pickCapPhoto(){
   capPhotos.push('现场照片-' + today() + '-' + (capPhotos.length + 1) + '.jpg');
@@ -2019,11 +2078,13 @@ function saveDraft(){
     seed:pl.seed, ps:p.id, poolCode:pl.code,
     poolName:pl.pool, base:pl.base, farmer:p.farmer,
     product:document.getElementById('capProduct').value || pl.fish,
+    template:(document.querySelector('input[name="capTemplate"]:checked')||{}).value || '',
     qty:capQty, codes:codeCount(), planQty:p.qty, segments:segList,
     codeFrom:0, codeTo:0,
     report:upFilled ? '检测报告.pdf' : '',
     photos:capPhotos.slice(),
     time:capTime, weight:document.getElementById('capWeight').value, remark:document.getElementById('remark').value,
+    growPhoto:growPhoto, growTime:document.getElementById('growTime').value, growPlace:document.getElementById('growPlace').value,
     cleared:draftCleared, stockBefore:pl.stock,
     created:now(), creator:ME_FARMER, status:'草稿'
   };
@@ -2068,6 +2129,13 @@ function openCapture(idx){
   renderCapProducts();
   document.getElementById('capProduct').value = '';
   document.getElementById('remark').value = '';
+  const tplRadios = document.querySelectorAll('input[name="capTemplate"]');
+  tplRadios[0].checked = true;
+  growPhoto = '';
+  const gb = document.getElementById('growPhotoBox');
+  if(gb){ gb.className = 'up'; gb.innerHTML = '<svg class="up-ico" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5"/><path d="M7.5 9.5L12 5l4.5 4.5"/><path d="M4 16v2.5A1.5 1.5 0 005.5 20h13a1.5 1.5 0 001.5-1.5V16"/></svg><p>点击上传培育图片</p><span>支持 JPG / PNG，单个不超过 10MB</span>'; }
+  document.getElementById('growTime').value = '';
+  document.getElementById('growPlace').value = '';
   document.getElementById('capOpts').classList.remove('show');
   document.getElementById('qtyHint').textContent = '';
   document.getElementById('qtyHint').className = 'hint';
@@ -2101,6 +2169,16 @@ function openCapture(idx){
       document.getElementById('capWeight').value = r.weight || '';
       document.getElementById('capProduct').value = r.product || '';
       document.getElementById('remark').value = r.remark || '';
+      if(r.template){
+        document.querySelectorAll('input[name="capTemplate"]').forEach(rd=>{
+          rd.checked = rd.value === r.template;
+        });
+      }
+      growPhoto = r.growPhoto || '';
+      const gb2 = document.getElementById('growPhotoBox');
+      if(gb2 && growPhoto){ gb2.className = 'up filled'; gb2.innerHTML = '<p>' + growPhoto + '</p><span>已上传</span>'; }
+      document.getElementById('growTime').value = (r.growTime || '').replace(' ', 'T');
+      document.getElementById('growPlace').value = r.growPlace || '';
       refreshClearOption();
       document.getElementById('clearPool').checked = !!r.cleared;
       capPhotos = (r.photos || []).slice();
@@ -2438,6 +2516,7 @@ function submitCapture(){
     seed:pl.seed, ps:p.id, poolCode:pl.code,
     poolName:pl.pool, base:pl.base, farmer:p.farmer,
     product:document.getElementById('capProduct').value || pl.fish,
+    template:(document.querySelector('input[name="capTemplate"]:checked')||{}).value || '',
     qty:capQty, codes:n, planQty:p.qty, segments:segList,
     codeFrom:parseInt(segList.length ? segList[0].f : 0, 10),
     codeTo:parseInt(segList.length ? segList[0].t : 0, 10),
@@ -2446,6 +2525,7 @@ function submitCapture(){
     time:document.getElementById('capTime').value.replace('T',' '),
     weight:document.getElementById('capWeight').value,
     remark:document.getElementById('remark').value,
+    growPhoto:growPhoto, growTime:document.getElementById('growTime').value, growPlace:document.getElementById('growPlace').value,
     cleared:cleared, stockBefore:stockBefore, stockAfter:stockAfter,
     created:now(), creator:ME_FARMER, status:'已完成'
   };
@@ -2489,6 +2569,7 @@ let miniPicked = null;                 // 当前选中的溯源码申请
 let miniSegs = [];                     // 码段 [{f,t}]
 let miniReport = false;
 let miniPhotos = 0;
+let miniGrowPhoto = '';
 
 function openMiniDemo(){
   miniView = 'list';
@@ -2553,6 +2634,7 @@ function miniNew(){
   miniSegs = [{f:'', t:''}];
   miniReport = false;
   miniPhotos = 0;
+  miniGrowPhoto = '';
   renderMini();
 }
 
@@ -2648,6 +2730,17 @@ function renderMiniForm(){
     </div>
     ${info}
     <div class="m-field">
+      <label>选择模板<i>*</i></label>
+      <div style="display:flex;gap:18px;flex-wrap:wrap;">
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#1f2d3d;">
+          <input type="radio" name="miniTemplate" value="千发消费者-无订单客商" checked style="accent-color:#2563eb;">千发消费者-无订单客商
+        </label>
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#1f2d3d;">
+          <input type="radio" name="miniTemplate" value="千发消费者-有订单客商" style="accent-color:#2563eb;">千发消费者-有订单客商
+        </label>
+      </div>
+    </div>
+    <div class="m-field">
       <label>产品名称<i>*</i></label>
       <select class="m-input" id="miniProduct">
         <option value="">请选择产品</option>
@@ -2693,6 +2786,20 @@ function renderMiniForm(){
       </div>
     </div>
     <div class="m-field">
+      <label>成鱼培育</label>
+      <div style="border:1px solid #e6ebf2;border-radius:10px;background:#f8fafd;padding:12px;">
+        <div style="font-size:12.5px;color:#5a6b80;margin-bottom:6px;">培育图片</div>
+        <div class="m-upload ${miniGrowPhoto ? 'filled' : ''}" onclick="miniUploadGrow()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5"/><path d="M7.5 9.5L12 5l4.5 4.5"/><path d="M4 16v2.5A1.5 1.5 0 005.5 20h13a1.5 1.5 0 001.5-1.5V16"/></svg>
+          <span>${miniGrowPhoto ? miniGrowPhoto + ' · 已上传' : '点击上传培育图片'}</span>
+        </div>
+        <div style="font-size:12.5px;color:#5a6b80;margin:10px 0 6px;">培育时间</div>
+        <input class="m-input" id="miniGrowTime" type="datetime-local">
+        <div style="font-size:12.5px;color:#5a6b80;margin:10px 0 6px;">培育地点</div>
+        <input class="m-input" id="miniGrowPlace" placeholder="请输入培育地点">
+      </div>
+    </div>
+    <div class="m-field">
       <label>备注</label>
       <input class="m-input" id="miniRemark" placeholder="选填，200 字以内">
     </div>
@@ -2705,6 +2812,7 @@ function renderMiniForm(){
 
 function miniUploadReport(){ miniReport = true; renderMini(); }
 function miniUploadPhoto(){ miniPhotos++; renderMini(); }
+function miniUploadGrow(){ miniGrowPhoto = '培育图片-' + today() + '.jpg'; renderMini(); }
 
 function miniSaveDraft(){
   if(!miniPicked){ miniToast('请先选择关联溯源码申请'); return; }
@@ -2715,9 +2823,13 @@ function miniSaveDraft(){
   const weightEl = document.getElementById('miniWeight');
   const rec = {
     seed:pl.seed, ps:p.id, poolCode:pl.code, poolName:pl.pool, base:pl.base,
-    farmer:p.farmer, product:(prodEl && prodEl.value) || pl.fish, qty:n, codes:n, planQty:p.qty, segments:segList,
+    farmer:p.farmer, product:(prodEl && prodEl.value) || pl.fish,
+    template:(document.querySelector('input[name="miniTemplate"]:checked')||{}).value || '',
+    qty:n, codes:n, planQty:p.qty, segments:segList,
     codeFrom:0, codeTo:0, report:'', photos:[], time:'', weight:(weightEl && weightEl.value) || '',
-    remark:'', cleared:false, stockBefore:pl.stock, created:now(), creator:ME_FARMER, status:'草稿'
+    remark:'', growPhoto:miniGrowPhoto,
+    growTime:document.getElementById('miniGrowTime').value, growPlace:document.getElementById('miniGrowPlace').value,
+    cleared:false, stockBefore:pl.stock, created:now(), creator:ME_FARMER, status:'草稿'
   };
   captures.unshift(Object.assign({id:'125HV2026' + String(10000 + (++seqHV))}, rec));
   miniView = 'list'; miniPicked = null;
@@ -2754,11 +2866,15 @@ function miniSubmit(){
   const segList = miniSegs.filter(s=>s.f && s.t).map(s=>({f:s.f, t:s.t}));
   const rec = {
     seed:pl.seed, ps:p.id, poolCode:pl.code, poolName:pl.pool, base:pl.base,
-    farmer:p.farmer, product:prodEl.value, qty:n, codes:n, planQty:p.qty, segments:segList,
+    farmer:p.farmer, product:prodEl.value,
+    template:(document.querySelector('input[name="miniTemplate"]:checked')||{}).value || '',
+    qty:n, codes:n, planQty:p.qty, segments:segList,
     codeFrom:parseInt(segList[0].f,10), codeTo:parseInt(segList[0].t,10),
     report:'检测报告.pdf', photos:[], time:document.getElementById('miniTime').value.replace('T',' '),
     weight:weightEl.value,
     remark:document.getElementById('miniRemark').value,
+    growPhoto:miniGrowPhoto,
+    growTime:document.getElementById('miniGrowTime').value, growPlace:document.getElementById('miniGrowPlace').value,
     cleared:cleared, stockBefore:pl.stock, created:now(), creator:ME_FARMER, status:'已完成'
   };
   // 与 PC submitCapture 相同的核销口径
