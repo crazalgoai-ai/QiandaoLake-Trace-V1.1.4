@@ -837,6 +837,21 @@
 
       <div class="row2">
         <div class="fi">
+          <label class="lb">订单客商<i>*</i></label>
+          <input class="ipt" id="capCustomer" placeholder="请输入订单客商名称">
+          <div class="hint" id="customerHint"></div>
+        </div>
+        <div class="fi">
+          <label class="lb">销售地区<i>*</i></label>
+          <select class="ipt" id="capRegion">
+            <option value="">请选择销售地区</option>
+          </select>
+          <div class="hint" id="regionHint"></div>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="fi">
           <label class="lb">捕捞时间<i>*</i></label>
           <input class="ipt" type="datetime-local" id="capTime">
         </div>
@@ -1170,6 +1185,9 @@ const POOLS = [
 /* 产品主数据（产品名称下拉取值，用于后续溯源展示） */
 const PRODUCTS = ['演示产品', '鳙鱼', '鲢鱼', '鲈鱼'];
 
+/* 销售地区（省级） */
+const REGIONS = ['北京市','天津市','河北省','山西省','内蒙古自治区','辽宁省','吉林省','黑龙江省','上海市','江苏省','浙江省','安徽省','福建省','江西省','山东省','河南省','湖北省','湖南省','广东省','广西壮族自治区','海南省','重庆市','四川省','贵州省','云南省','西藏自治区','陕西省','甘肃省','青海省','宁夏回族自治区','新疆维吾尔自治区','香港特别行政区','澳门特别行政区','台湾省'];
+
 /* 溯源码申请单：一张单，状态 待审批 / 待捕捞 / 已捕捞 / 已驳回 / 已失效 / 已作废 */
 let applications = [
   {id:'AQ202610009', farmer:'跳跃养殖户', po:0, planDate:'2026-11-05', qty:500, codes:500,
@@ -1459,6 +1477,8 @@ function viewCapture(i){
     <div class="k">基地名称</div><div class="v">${r.base}</div>
     <div class="k">养殖户</div><div class="v">${r.farmer}</div>
     <div class="k">产品名称</div><div class="v">${r.product}</div>
+    <div class="k">订单客商</div><div class="v">${r.customer || '<span class="muted">—</span>'}</div>
+    <div class="k">销售地区</div><div class="v">${r.region || '<span class="muted">—</span>'}</div>
     <div class="k">模板</div><div class="v">${r.template || '<span class="muted">—</span>'}</div>
 
     <div class="grp">捕捞信息</div>
@@ -2079,6 +2099,7 @@ function saveDraft(){
     poolName:pl.pool, base:pl.base, farmer:p.farmer,
     product:document.getElementById('capProduct').value || pl.fish,
     template:(document.querySelector('input[name="capTemplate"]:checked')||{}).value || '',
+    customer:document.getElementById('capCustomer').value, region:document.getElementById('capRegion').value,
     qty:capQty, codes:codeCount(), planQty:p.qty, segments:segList,
     codeFrom:0, codeTo:0,
     report:upFilled ? '检测报告.pdf' : '',
@@ -2117,6 +2138,13 @@ function renderCapProducts(){
     PRODUCTS.map(p=>'<option value="' + p + '">' + p + '</option>').join('');
 }
 
+function renderCapRegions(){
+  const sel = document.getElementById('capRegion');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">请选择销售地区</option>' +
+    REGIONS.map(r=>'<option value="' + r + '">' + r + '</option>').join('');
+}
+
 function openCapture(idx){
   editCapIdx = (typeof idx === 'number') ? idx : null;
   document.getElementById('capTitle').textContent = editCapIdx === null ? '新增捕捞记录' : '编辑捕捞草稿';
@@ -2128,6 +2156,9 @@ function openCapture(idx){
   document.getElementById('capWeight').value = '';
   renderCapProducts();
   document.getElementById('capProduct').value = '';
+  renderCapRegions();
+  document.getElementById('capRegion').value = '';
+  document.getElementById('capCustomer').value = '';
   document.getElementById('remark').value = '';
   const tplRadios = document.querySelectorAll('input[name="capTemplate"]');
   tplRadios[0].checked = true;
@@ -2168,6 +2199,8 @@ function openCapture(idx){
       document.getElementById('capTime').value = (r.time || '').replace(' ', 'T');
       document.getElementById('capWeight').value = r.weight || '';
       document.getElementById('capProduct').value = r.product || '';
+      document.getElementById('capCustomer').value = r.customer || '';
+      document.getElementById('capRegion').value = r.region || '';
       document.getElementById('remark').value = r.remark || '';
       if(r.template){
         document.querySelectorAll('input[name="capTemplate"]').forEach(rd=>{
@@ -2491,6 +2524,22 @@ function submitCapture(){
     ph.className = 'hint err';
     return;
   }
+  const custEl = document.getElementById('capCustomer');
+  if(custEl && custEl.value.trim() === ''){
+    custEl.classList.add('bad');
+    const ch = document.getElementById('customerHint');
+    ch.textContent = '请填写订单客商';
+    ch.className = 'hint err';
+    return;
+  }
+  const regEl = document.getElementById('capRegion');
+  if(regEl && regEl.value === ''){
+    regEl.classList.add('bad');
+    const rh = document.getElementById('regionHint');
+    rh.textContent = '请选择销售地区';
+    rh.className = 'hint err';
+    return;
+  }
   if(document.getElementById('upBox').className.indexOf('filled') < 0){
     document.getElementById('upErr').textContent = '请上传检测报告';
     document.getElementById('upBox').classList.add('bad');
@@ -2517,6 +2566,7 @@ function submitCapture(){
     poolName:pl.pool, base:pl.base, farmer:p.farmer,
     product:document.getElementById('capProduct').value || pl.fish,
     template:(document.querySelector('input[name="capTemplate"]:checked')||{}).value || '',
+    customer:document.getElementById('capCustomer').value, region:document.getElementById('capRegion').value,
     qty:capQty, codes:n, planQty:p.qty, segments:segList,
     codeFrom:parseInt(segList.length ? segList[0].f : 0, 10),
     codeTo:parseInt(segList.length ? segList[0].t : 0, 10),
@@ -2748,6 +2798,17 @@ function renderMiniForm(){
       </select>
     </div>
     <div class="m-field">
+      <label>订单客商<i>*</i></label>
+      <input class="m-input" id="miniCustomer" placeholder="请输入订单客商名称">
+    </div>
+    <div class="m-field">
+      <label>销售地区<i>*</i></label>
+      <select class="m-input" id="miniRegion">
+        <option value="">请选择销售地区</option>
+        ${REGIONS.map(r=>'<option value="'+r+'">'+r+'</option>').join('')}
+      </select>
+    </div>
+    <div class="m-field">
       <label>捕捞时间<i>*</i></label>
       <input class="m-input" id="miniTime" type="datetime-local" value="${now().slice(0,16)}">
     </div>
@@ -2825,6 +2886,7 @@ function miniSaveDraft(){
     seed:pl.seed, ps:p.id, poolCode:pl.code, poolName:pl.pool, base:pl.base,
     farmer:p.farmer, product:(prodEl && prodEl.value) || pl.fish,
     template:(document.querySelector('input[name="miniTemplate"]:checked')||{}).value || '',
+    customer:document.getElementById('miniCustomer').value, region:document.getElementById('miniRegion').value,
     qty:n, codes:n, planQty:p.qty, segments:segList,
     codeFrom:0, codeTo:0, report:'', photos:[], time:'', weight:(weightEl && weightEl.value) || '',
     remark:'', growPhoto:miniGrowPhoto,
@@ -2850,6 +2912,12 @@ function miniSubmit(){
   // 产品名称必填
   const prodEl = document.getElementById('miniProduct');
   if(prodEl && prodEl.value === ''){ miniToast('请选择产品名称'); return; }
+  // 订单客商必填
+  const custEl = document.getElementById('miniCustomer');
+  if(custEl && custEl.value.trim() === ''){ miniToast('请填写订单客商'); return; }
+  // 销售地区必填
+  const regEl = document.getElementById('miniRegion');
+  if(regEl && regEl.value === ''){ miniToast('请选择销售地区'); return; }
   // 捕捞数量（斤）必填
   const weightEl = document.getElementById('miniWeight');
   if(weightEl && weightEl.value.trim() === ''){ miniToast('请填写捕捞数量（斤）'); return; }
@@ -2868,6 +2936,7 @@ function miniSubmit(){
     seed:pl.seed, ps:p.id, poolCode:pl.code, poolName:pl.pool, base:pl.base,
     farmer:p.farmer, product:prodEl.value,
     template:(document.querySelector('input[name="miniTemplate"]:checked')||{}).value || '',
+    customer:custEl.value, region:regEl.value,
     qty:n, codes:n, planQty:p.qty, segments:segList,
     codeFrom:parseInt(segList[0].f,10), codeTo:parseInt(segList[0].t,10),
     report:'检测报告.pdf', photos:[], time:document.getElementById('miniTime').value.replace('T',' '),
